@@ -1,0 +1,21 @@
+{
+    "emojiNames": [
+        "Gold",
+        "silver",
+        "bromz"
+    ],
+    "emojiConfigs": [
+        {
+            "name": "Gold",
+            "points": 10
+        },
+        {
+            "name": "silver",
+            "points": 5
+        },
+        {
+            "name": "bromz",
+            "points": 2
+        }
+    ]
+}
