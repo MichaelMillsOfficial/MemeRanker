@@ -1,4 +1,5 @@
-const VOTE_CONFIG = require('../voteConfig.json');
+const calcMemeScore = require('../util/calculateMemeScore');
+const userUtil = require('../util/userUtil.js');
 
 const IS_TEST = true;
 
@@ -11,14 +12,6 @@ module.exports = {
         const message = !reaction_orig.message.author
             ? await reaction_orig.message.fetch()
             : reaction_orig.message;
-        
-        //console.log(message);
-        
-        if(message.author.id === user.id) {
-            // our reaction is coming from the same user that posted the message, no farming!
-            console.log("No farming!");
-            return;
-        }
 
         if(!IS_TEST && message.attachments.size === 0) {
             // We only want to count reactions to memes, images only!
@@ -26,13 +19,18 @@ module.exports = {
             return;
         }
 
-        if(VOTE_CONFIG.emojiNames.includes(reaction_orig.emoji.name)) {
-            // The reaction is one of our configured emojis!
-            VOTE_CONFIG.emojiConfigs.forEach(config => {
-                if(config.name === reaction_orig.emoji.name) {
-                    console.log(`Reacted using ${reaction_orig.emoji.name}! Award this person ${config.points} points!`);
-                }
-            });
+        // TODO fetch user's current score from nickname - DO THIS IN THE USERUTIL
+        // Using a placeholder for now cuz I am le tired
+        var currScore = 69;
+
+        var newScore = await calcMemeScore.addScore(reaction_orig, currScore, user);
+
+        if(currScore === newScore) {
+            // No points accumulated
+            return;
         }
+
+        await userUtil.updateUserRolesByScore(user, newScore);
+        await userUtil.updateNicknameWithScore(user, newScore);
     }
 }
