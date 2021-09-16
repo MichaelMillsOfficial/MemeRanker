@@ -5,7 +5,7 @@ const userUtil = require('../util/userUtil.js');
 
 var shitposters = {};
 
-function doCalcScoreByChannel(channel) {
+async function doCalcScoreByChannel(channel) {
     await fetchAll.messages(channel, {
         userOnly: true
     }).filter(msg => msg.attachments.size > 0)
@@ -22,9 +22,12 @@ function doCalcScoreByChannel(channel) {
         // Fetch the current score for this shitposter
         var score = shitposters[shitposter.id].score;
 
-        score += await calculateMemeScore.calcMemeScore(message, score, shitposter);
-
-        shitposters[shitposter.id].score = score;
+        calculateMemeScore.calcMemeScore(message, score, shitposter).then(
+            scoreCalc => {
+                score += scoreCalc;
+                shitposters[shitposter.id].score = score;
+            }
+        );
     });
 }
 
@@ -36,17 +39,14 @@ module.exports = {
 	async execute(interaction) {
         // Find all users who have memer roles
         var memerRole;
-        interaction.guild.roles.fetch()
-            .then(roles => {
-                console.log(roles);
-                for(role in roles) {
-                    console.log(role);
-                    // Determine if we have the role
-                    if(role.name === 'Memer') {
-                        memerRole = role;
-                    }
-                }
-            });
+        var allRoles = await interaction.guild.roles.fetch();
+
+        console.log(allRoles);
+        allRoles.forEach((value) => {
+            if(value.name === 'Memer') {
+                memerRole = value;
+            }
+        });
 
         // Create the role if it doesn't exist
         if(!memerRole) {
@@ -55,7 +55,7 @@ module.exports = {
                 color: 'BLUE',
                 reason: 'Declares you a memer! You have posted at least one image that received points!'
             });
-            await interaction.reply('Created the "Memer" role!');
+            // await interaction.reply('Created the "Memer" role!');
         }
 
         // We need to fetch all messages with images
@@ -66,22 +66,26 @@ module.exports = {
         // and then apply our special roles
 
         // Fetch all messages in a memes channel
-        const memesChannel = interaction.guild.channels.find(
-            ch => ch.name.toLowerCase() === 'memes' || ch.name.toLowerCase() === 'nsfw-memes'
-        );
+        const allChannels = await interaction.guild.channels.fetch();
+        var memesChannel, nsfwMemesChannel;
 
-        const nsfwMemesChannel = interaction.guild.channels.find(
-            ch => ch.name.toLowerCase() === 'nsfw-memes'
-        );
+        allChannels.forEach((value) => {
+            if(value.name.toLowerCase() === 'memes') {
+                memesChannel = value;
+            } else if(value.name.toLowerCase() === 'nsfw-memes') {
+                nsfwMemesChannel = value;
+            }
+        });
 
-        doCalcScoreByChannel(memesChannel);
+        await doCalcScoreByChannel(memesChannel);
 
-        doCalcScoreByChannel(nsfwMemesChannel);
+        await doCalcScoreByChannel(nsfwMemesChannel);
 
         // Now that we have our scores calculated, we'll check if our roles are set and update 
         // our shitposter's roles and nicknames
         for(shitposterid in shitposters.keys()) {
             var shitposter = shitposters[shitposterid];
+            console.log(shitposter);
             await userUtil.updateNicknameWithScore(shitposter.shitposter, shitposter.score);
             await userUtil.updateUserRolesByScore(shitposter.shitposter, shitposter.score);
         }

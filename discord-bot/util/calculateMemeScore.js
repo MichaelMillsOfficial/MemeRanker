@@ -6,7 +6,12 @@ module.exports = {
         var reactions = message.reactions;
 
         reactions.forEach(reaction => {
-            score += await addScore(reaction, score, poster);
+            addScore(reaction, score, poster).then(
+                scoreCalc => {
+                    score += scoreCalc;
+                    shitposters[shitposter.id].score = score;
+                }
+            );
         });
 
         return score;
