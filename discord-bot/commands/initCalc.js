@@ -6,9 +6,15 @@ const userUtil = require('../util/userUtil.js');
 var shitposters = {};
 
 async function doCalcScoreByChannel(channel) {
-    await fetchAll.messages(channel, {
+    var allMessages = await fetchAll.messages(channel, {
         userOnly: true
-    }).filter(msg => msg.attachments.size > 0)
+    });
+
+    if(!allMessages) {
+        return;
+    }
+    
+    allMessages.filter(msg => msg.attachments.size > 0)
     .foreach(msg => {
         // Get the user that posted the message
         var shitposter = msg.author;
@@ -41,7 +47,6 @@ module.exports = {
         var memerRole;
         var allRoles = await interaction.guild.roles.fetch();
 
-        console.log(allRoles);
         allRoles.forEach((value) => {
             if(value.name === 'Memer') {
                 memerRole = value;
@@ -70,6 +75,7 @@ module.exports = {
         var memesChannel, nsfwMemesChannel;
 
         allChannels.forEach((value) => {
+            console.log(value);
             if(value.name.toLowerCase() === 'memes') {
                 memesChannel = value;
             } else if(value.name.toLowerCase() === 'nsfw-memes') {
@@ -77,9 +83,15 @@ module.exports = {
             }
         });
 
-        await doCalcScoreByChannel(memesChannel);
+        console.log(memesChannel);
 
-        await doCalcScoreByChannel(nsfwMemesChannel);
+        if(memesChannel) {
+            await doCalcScoreByChannel(memesChannel);
+        }
+        
+        if(nsfwMemesChannel) {
+            await doCalcScoreByChannel(nsfwMemesChannel);
+        }
 
         // Now that we have our scores calculated, we'll check if our roles are set and update 
         // our shitposter's roles and nicknames
